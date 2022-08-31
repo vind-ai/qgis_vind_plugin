@@ -24,10 +24,12 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject, QgsJsonExporter
+from qgis.core import QgsProject, QgsJsonExporter, QgsMapLayerType
 import http.client
 import json
 import time
+import uuid
+from datetime import datetime
 
 
 # Initialize Qt resources from file resources.py
@@ -184,6 +186,25 @@ class VindTechnologies:
                 action)
             self.iface.removeToolBarIcon(action)
 
+
+    def add_id(self, f):
+        new_id = str(uuid.uuid4())
+        f["id"] = new_id
+        f["properties"]["id"] = new_id
+
+
+    def multi_feature_to_single(self, features):
+        single_features = []
+        for feature in features:
+            if "Multi" in feature["geometry"]["type"]:
+                single_type = feature["geometry"]["type"].split("Multi")[1]
+                for coords in feature["geometry"]["coordinates"]:
+                    single_features.append({**feature, "geometry": {"type": single_type, "coordinates": coords}})
+            else:
+                single_features.append(feature)
+        return single_features
+
+
     def sync_project(self):
         self.dlg.status.setStyleSheet("color: lightgreen")
         self.dlg.status.setText("Synching data...")
@@ -203,18 +224,19 @@ class VindTechnologies:
         customer_id = split_url[4]
         project_id = split_url[5]
 
-        layer = self.iface.activeLayer()
-        features = layer.getFeatures()
+        tree = QgsProject.instance().layerTreeRoot()
+
+        layers = [layer for layer in QgsProject.instance().mapLayers().values() if layer.type() == QgsMapLayerType.VectorLayer and tree.findLayer(layer).isVisible() is True]
+        features = [feature for sublist in [list(layer.getFeatures()) for layer in layers] for feature in sublist]
+
         exporter = QgsJsonExporter()
 
         geojson_features = [json.loads(exporter.exportFeature(feature)) for feature in features]
+        geojson_features = self.multi_feature_to_single(geojson_features)
+        for feature in geojson_features:
+            self.add_id(feature)
 
         timestamp = int(round(time.time() * 1000))
-
-        print("customer_id", customer_id)
-        print("project_id", project_id)
-        print("geojson_features", geojson_features)
-        print("timestamp", timestamp)
 
         conn = http.client.HTTPSConnection("app.vind.ai")
         conn.request("PUT", f"/api/project-data/{customer_id}/{project_id}", json.dumps({"features": geojson_features, "timestamp": timestamp}), {"content-type": "application/json", "Authorization": f"Bearer {token}"})
@@ -227,7 +249,7 @@ class VindTechnologies:
             self.dlg.status.setText(f"Unable to synch, server responded with {res.status}, please contact support@vind.ai if you have done everything stated in the readme")
         else:
             self.dlg.status.setStyleSheet("color: green")
-            self.dlg.status.setText("Project has been synchronized")
+            self.dlg.status.setText(f"Project has been synchronized - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 
 
