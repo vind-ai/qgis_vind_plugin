@@ -1,0 +1,11 @@
+*.tif
+data
+.vscode
+.venv
+.DS_Store
+*.pyc
+node_modules
+*pycache*
+.pytest*
+.idea
+.serverless
