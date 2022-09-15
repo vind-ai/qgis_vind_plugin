@@ -226,10 +226,15 @@ class VindTechnologies:
 
         geojson_features = []
         layers = [layer for layer in QgsProject.instance().mapLayers().values() if layer.type() == QgsMapLayerType.VectorLayer and tree.findLayer(layer).isVisible() is True]
+
+        print(f"Found {len(layers)} layers")
+
         for layer in layers:
             exporter = QgsJsonExporter(layer)
             features = list(layer.getFeatures())
             geojson_features += [json.loads(exporter.exportFeature(feature)) for feature in features]
+
+        print(geojson_features)
 
         geojson_features = self.multi_feature_to_single(geojson_features)
         for feature in geojson_features:
