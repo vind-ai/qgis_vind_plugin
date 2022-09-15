@@ -177,7 +177,6 @@ class VindTechnologies:
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -186,12 +185,12 @@ class VindTechnologies:
                 action)
             self.iface.removeToolBarIcon(action)
 
-
-    def add_id(self, f):
+    def add_id_and_name(self, f):
         new_id = str(uuid.uuid4())
         f["id"] = new_id
         f["properties"]["id"] = new_id
-
+        if "name" not in f["properties"]:
+            f["properties"]["name"] = "Synced feature"
 
     def multi_feature_to_single(self, features):
         single_features = []
@@ -203,7 +202,6 @@ class VindTechnologies:
             else:
                 single_features.append(feature)
         return single_features
-
 
     def sync_project(self):
         self.dlg.status.setStyleSheet("color: lightgreen")
@@ -226,15 +224,16 @@ class VindTechnologies:
 
         tree = QgsProject.instance().layerTreeRoot()
 
+        geojson_features = []
         layers = [layer for layer in QgsProject.instance().mapLayers().values() if layer.type() == QgsMapLayerType.VectorLayer and tree.findLayer(layer).isVisible() is True]
-        features = [feature for sublist in [list(layer.getFeatures()) for layer in layers] for feature in sublist]
+        for layer in layers:
+            exporter = QgsJsonExporter(layer)
+            features = list(layer.getFeatures())
+            geojson_features += [json.loads(exporter.exportFeature(feature)) for feature in features]
 
-        exporter = QgsJsonExporter()
-
-        geojson_features = [json.loads(exporter.exportFeature(feature)) for feature in features]
         geojson_features = self.multi_feature_to_single(geojson_features)
         for feature in geojson_features:
-            self.add_id(feature)
+            self.add_id_and_name(feature)
 
         timestamp = int(round(time.time() * 1000))
 
@@ -250,9 +249,6 @@ class VindTechnologies:
         else:
             self.dlg.status.setStyleSheet("color: green")
             self.dlg.status.setText(f"Project has been synchronized - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-
-
-
 
     def run(self):
         """Run method that performs all the real work"""
