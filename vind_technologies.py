@@ -219,8 +219,12 @@ class VindTechnologies:
             self.dlg.status.setText("Incorrect url? Go to readme to learn how to set it correctly")
             return
 
-        customer_id = split_url[4]
-        project_id = split_url[5]
+        if split_url[3] == "design":
+            customer_id = split_url[5]
+            project_id = split_url[6]
+        else:
+            customer_id = split_url[4]
+            project_id = split_url[5]
 
         tree = QgsProject.instance().layerTreeRoot()
 
