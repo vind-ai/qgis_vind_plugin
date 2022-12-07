@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject, QgsJsonExporter, QgsMapLayerType
+from qgis.core import QgsProject, QgsJsonExporter, QgsMapLayerType, QgsMessageLog
 import http.client
 import json
 import time
@@ -222,9 +222,11 @@ class VindTechnologies:
         if split_url[3] == "design":
             customer_id = split_url[5]
             project_id = split_url[6]
+            branch_id = split_url[7]
         else:
             customer_id = split_url[4]
             project_id = split_url[5]
+            branch_id = split_url[6]
 
         tree = QgsProject.instance().layerTreeRoot()
 
@@ -247,7 +249,7 @@ class VindTechnologies:
         timestamp = int(round(time.time() * 1000))
 
         conn = http.client.HTTPSConnection("app.vind.ai")
-        conn.request("PUT", f"/api/project-data/{customer_id}/{project_id}", json.dumps({"features": geojson_features, "timestamp": timestamp}), {"content-type": "application/json", "Authorization": f"Bearer {token}"})
+        conn.request("PUT", f"/api/project-data-v3/{customer_id}/{project_id}/{branch_id}?features=true", json.dumps({"features": geojson_features, "timestamp": timestamp}), {"x-project-data-client-version": "2.0.0", "content-type": "application/json", "Authorization": f"Bearer {token}"})
         res = conn.getresponse()
 
         print("res.status", res.status)

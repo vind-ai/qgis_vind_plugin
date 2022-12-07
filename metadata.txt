@@ -6,7 +6,7 @@
 name=Vind Technologies
 qgisMinimumVersion=3.0
 description=Plugin synching QGIS project with Vind projects
-version=1.0
+version=2.0
 author=Vind Technologies
 email=support@vind.ai
 
