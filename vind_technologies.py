@@ -249,7 +249,7 @@ class VindTechnologies:
         timestamp = int(round(time.time() * 1000))
 
         conn = http.client.HTTPSConnection("app.vind.ai")
-        conn.request("PUT", f"/api/project-data-v3/{customer_id}/{project_id}/{branch_id}?features=true", json.dumps({"features": geojson_features, "timestamp": timestamp}), {"x-project-data-client-version": "2.0.0", "content-type": "application/json", "Authorization": f"Bearer {token}"})
+        conn.request("PUT", f"/api/project-data-v3/branch/{customer_id}/{project_id}/{branch_id}?features=true", json.dumps({"features": geojson_features, "timestamp": timestamp}), {"x-project-data-client-version": "2.0.0", "content-type": "application/json", "Authorization": f"Bearer {token}"})
         res = conn.getresponse()
 
         print("res.status", res.status)
